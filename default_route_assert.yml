@@ -1,0 +1,57 @@
+---
+### Here I am trying to use assert on the file which was saved
+
+- name: Take global command
+  hosts: S3
+  connection: local
+  gather_facts: no
+  vars_files:
+    - /home/patryk/Arista_Ansible/credentials.yaml
+
+  vars_prompt:
+    - name: NEXT_HOP
+      prompt: "Please enter the IP of the Next HOP"
+      private: no
+
+  tasks:
+  - name: Add default route
+    eos_config:
+      provider:
+        host: "{{ inventory_hostname }}"
+        username: "{{ USERNAME }}"
+        password: "{{ DEVICE_PASSWORD }}"
+        use_ssl: no
+        authorize: yes
+        transport: cli
+      lines:
+        - "ip route 0.0.0.0/0 {{ NEXT_HOP }}"
+
+  - name: INPUT SHOW COMMAND TO DEVICES
+    eos_command:
+        commands: "show run"
+        provider:
+          host: "{{ inventory_hostname }}"
+          username: "{{ USERNAME }}"
+          password: "{{ DEVICE_PASSWORD }}"
+          use_ssl: no
+          authorize: yes
+          transport: cli
+    register: print_output
+
+  - name: OUTPUT SHOW COMMAND to SCREEN
+    debug:
+        msg: "{{ print_output.stdout_lines }}"
+
+  - name: OUTPUT SHOW COMMAND to FILE
+    copy: content="{{ print_output.stdout[0] }}" dest="./output/{{ inventory_hostname }}.txt"
+
+  - name: Get the whole config FILE
+    command: cat ./output/{{ inventory_hostname }}.txt
+    register: postcheck
+
+  - name: Assert that the config was pushed succesfully
+    assert:
+       that:
+          - "'ip route 0.0.0.0/0 {{ NEXT_HOP }}' in postcheck.stdout_lines"
+       success_msg: "Yes it has been pushed"
+       fail_msg: "It's not there!"

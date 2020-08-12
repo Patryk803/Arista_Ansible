@@ -1,0 +1,18 @@
+---
+- name: Run commands on remote LAB devices
+  hosts: all
+  become: yes
+  connection: local
+  gather_facts: no
+  vars_files:
+    - /home/patryk/Ansible-GNS3/default_route/yaml_demo.yaml
+
+
+  tasks:
+  - name: Get the whole SW1.txt file
+    command: cat /home/patryk/Ansible-GNS3/default_route/output/S1.txt
+    register: SW1_config
+
+  - name: Assert that ip route 0.0.0.0/0 55.5.5.5 is there
+    assert:
+      that: "ip route 0.0.0.0/0 55.5.5.5 in SW1_config.stdout_lines"

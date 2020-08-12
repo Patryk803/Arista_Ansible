@@ -1,0 +1,38 @@
+---
+
+- name: Take show command input
+  hosts: S3
+  connection: local
+  gather_facts: false
+
+  vars_prompt:
+    - name: USERNAME
+      prompt: "Please put your username"
+      private: no
+    - name: DEVICE_PASSWORD
+      prompt: "Please put your password"
+      private: yes
+    - name: SHOW_COMMAND
+      prompt: "Please enter the full show command you want to run"
+      private: no
+
+
+  tasks:
+  - name: INPUT SHOW COMMAND TO DEVICES
+    eos_command:
+      commands: "{{ SHOW_COMMAND }}"
+      provider:
+        host: "{{ inventory_hostname }}"
+        username: "{{ USERNAME }}"
+        password: "{{ DEVICE_PASSWORD }}"
+        use_ssl: no
+        authorize: yes
+        transport: cli
+    register: print_output
+
+  - name: OUTPUT SHOW COMMAND to SCREEN
+    debug:
+      msg: "{{ print_output.stdout_lines }}"
+
+  - name: OUTPUT SHOW COMMAND to FILE
+    copy: content="{{ print_output.stdout[0] }}" dest="./output/{{ inventory_hostname }}.txt"

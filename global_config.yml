@@ -1,0 +1,29 @@
+---
+# Here instead of using multiple vars_prompt we use credentials.yaml
+- name: Take global command
+  hosts: S3
+  connection: local
+  gather_facts: no
+  pre_tasks:
+    - include_vars: "/home/patryk/Arista_Ansible/credentials.yaml"
+
+  vars_prompt:
+    - name: NEXT_HOP
+      prompt: "Please enter the IP of the Next HOP"
+      private: no ## Private = yes would mean that we wouldn't see the input
+
+  tasks:
+  - name: INPUT SHOW COMMAND TO DEVICES
+    eos_config:
+      provider:
+        host: "{{ inventory_hostname }}"
+        username: "{{ USERNAME }}"
+        password: "{{ DEVICE_PASSWORD }}"
+        use_ssl: no
+        authorize: yes
+        transport: cli
+      lines:
+        - "ip route 0.0.0.0/0 {{ NEXT_HOP }}"
+    register: print_output
+
+  - debug: var=print_output   ## We cannot use print_output.stdout_lines as eos_config doesn't support it.
